@@ -17,5 +17,9 @@ namespace PaymentSystem.Server.Data
             IOptions<OperationalStoreOptions> operationalStoreOptions) : base(options, operationalStoreOptions)
         {
         }
+
+        public DbSet<Wallet> Wallets { get; set; }
+        public DbSet<Transactions> Transactions { get; set; }
+
     }
 }
