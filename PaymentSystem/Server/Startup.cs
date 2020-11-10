@@ -13,6 +13,7 @@ using Microsoft.Extensions.Hosting;
 using System.Linq;
 using PaymentSystem.Server.Data;
 using PaymentSystem.Server.Models;
+using System.Security.Claims;
 
 namespace PaymentSystem.Server
 {
@@ -41,6 +42,9 @@ namespace PaymentSystem.Server
 
             services.AddAuthentication()
                 .AddIdentityServerJwt();
+
+            services.Configure<IdentityOptions>(options =>
+                options.ClaimsIdentity.UserIdClaimType = ClaimTypes.NameIdentifier);
 
             services.AddControllersWithViews();
             services.AddRazorPages();
