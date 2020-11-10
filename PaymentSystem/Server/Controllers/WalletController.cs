@@ -61,17 +61,17 @@ namespace PaymentSystem.Server.Controllers
         }
 
         [HttpDelete]
-        public IActionResult DeleteWallet([FromQuery] Guid id)
+        [Route("{id}")]
+        public IActionResult DeleteWallet([FromRoute] Guid id)
         {
             var userId = userManager.GetUserId(User);
-
             var user = context.Users.Include(x => x.Wallets).FirstOrDefault(x => x.Id == userId);
 
-            var walletIndex = user.Wallets.FindIndex(x => x.Id == id);
+            var wallet = user.Wallets.Find(x => x.Id == id);
 
-            if (walletIndex >= 0)    //if the user has a wallet with this id
+            if (wallet != null)    //if the user has a wallet with this id
             {
-                user.Wallets.RemoveAt(walletIndex);
+                user.Wallets.Remove(wallet);
             }
             else
             {

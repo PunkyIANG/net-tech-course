@@ -49,14 +49,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            WalletList = await HttpClient.GetFromJsonAsync<List<Wallet>>("api/wallet");
-        }
-        catch (AccessTokenNotAvailableException exception)
-        {
-            exception.Redirect();
-        }
+        await LoadWallets();
     }
 
     private async Task CreateWallet()
@@ -67,20 +60,24 @@ else
                 return;
 
             var response = await HttpClient.PostAsync("api/wallet?currency=" + Currency, null);
-            
+
 
             if (response.IsSuccessStatusCode)
             {
-                var newWallet = new Wallet
-                {
-                    Id = Guid.NewGuid(),
-                    Amount = 0,
-                    Currency = Currency
-                };
-
-                WalletList.Add(newWallet);
-
+                await LoadWallets();
             }
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+
+    private async Task LoadWallets()
+    {
+        try
+        {
+            WalletList = await HttpClient.GetFromJsonAsync<List<Wallet>>("api/wallet");
         }
         catch (AccessTokenNotAvailableException exception)
         {
@@ -92,12 +89,8 @@ else
     {
         try
         {
-            var response = await HttpClient.DeleteAsync("api/wallet?id=" + wallet.Id);
-
-            if (response.IsSuccessStatusCode)
-            {
-                WalletList.Remove(wallet);
-            }
+            await HttpClient.DeleteAsync("api/wallet/" + wallet.Id);
+            await LoadWallets();
         }
         catch (AccessTokenNotAvailableException exception)
         {
