@@ -140,5 +140,26 @@ namespace PaymentSystem.Server.Controllers
 
             return Ok();
         }
+
+        [HttpPost]
+        [Route("validation")]
+        public IActionResult ValidateUser([FromBody] TransferDto data)
+        {
+            var user = context.Users.Include(x => x.Wallets).FirstOrDefault(x => x.UserName == data.Username);
+
+            if (user == null)
+            {
+                return BadRequest();
+            }
+
+            var wallet = user.Wallets.FirstOrDefault(x => x.Currency == data.Currency);
+
+            if (wallet == null)
+            {
+                return BadRequest();
+            }
+
+            return Ok();
+        }
     }
 }
