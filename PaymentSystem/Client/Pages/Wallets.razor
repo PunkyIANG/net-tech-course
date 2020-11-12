@@ -4,10 +4,12 @@
 @using PaymentSystem.Shared
 @attribute [Authorize]
 @inject HttpClient HttpClient
+@inject NavigationManager navManager
+
 
 <style>
     .wallet {
-        width:250px;
+        width: 250px;
         border: 1px solid #555;
         border-radius: 1px;
         padding: 10px;
@@ -30,7 +32,10 @@ else
             <div>
                 <span>@wallet.Amount</span>
                 <span>@wallet.Currency</span>
+            </div>
+            <div>
                 <button @onclick="() => DeleteWallet(wallet)">Delete wallet</button>
+                <button @onclick="() => MakeTransfer(wallet.Id)">Make transfer</button>
             </div>
         </div>
     }
@@ -38,7 +43,7 @@ else
 
 <div>
     <h3>Create a new wallet</h3>
-    <input type="text" placeholder="Currency" @bind="Currency"/>
+    <input type="text" placeholder="Currency" @bind="Currency" />
     <button @onclick="() => CreateWallet()">Create wallet</button>
 </div>
 
@@ -50,6 +55,18 @@ else
     protected override async Task OnInitializedAsync()
     {
         await LoadWallets();
+    }
+
+    private async Task LoadWallets()
+    {
+        try
+        {
+            WalletList = await HttpClient.GetFromJsonAsync<List<Wallet>>("api/wallet");
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
     }
 
     private async Task CreateWallet()
@@ -73,11 +90,12 @@ else
         }
     }
 
-    private async Task LoadWallets()
+    private async Task DeleteWallet(Wallet wallet)
     {
         try
         {
-            WalletList = await HttpClient.GetFromJsonAsync<List<Wallet>>("api/wallet");
+            await HttpClient.DeleteAsync("api/wallet/" + wallet.Id);
+            await LoadWallets();
         }
         catch (AccessTokenNotAvailableException exception)
         {
@@ -85,12 +103,11 @@ else
         }
     }
 
-    private async Task DeleteWallet(Wallet wallet)
+    private async Task MakeTransfer(Guid id)
     {
         try
         {
-            await HttpClient.DeleteAsync("api/wallet/" + wallet.Id);
-            await LoadWallets();
+            navManager.NavigateTo($"transfer/{id}");
         }
         catch (AccessTokenNotAvailableException exception)
         {
