@@ -35,6 +35,9 @@ else
             {
                 <p class="validation-message">This user does not exist or does not have a suitable wallet to receive the funds</p>
             }
+
+                <input @bind="transferData.Username"/>
+            </p>
             <button class="btn btn-primary" @onclick="MakeTransfer">Transfer</button>
         </div>
     </div>
@@ -57,7 +60,6 @@ else
     }
 
     ValidationStatus validationStatus = ValidationStatus.None;
-
 
     protected override async Task OnInitializedAsync()
     {

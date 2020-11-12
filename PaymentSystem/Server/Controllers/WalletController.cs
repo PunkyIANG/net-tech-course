@@ -48,7 +48,7 @@ namespace PaymentSystem.Server.Controllers
 
 
         [HttpPost]
-        public IActionResult CreateWallet([FromQuery]string currency)
+        public IActionResult CreateWallet([FromQuery] string currency)
         {
             var userId = userManager.GetUserId(User);
 
@@ -108,7 +108,7 @@ namespace PaymentSystem.Server.Controllers
             }
 
             var source = user.Wallets.FirstOrDefault(x => x.Id == Guid.Parse(data.SourceWalletId));
-            
+
             var destinationUser = context.Users.Include(x => x.Wallets).FirstOrDefault(x => x.UserName == data.Username);
 
             if (destinationUser == null)
