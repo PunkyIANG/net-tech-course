@@ -1,7 +1,4 @@
 ﻿@page "/wallets"
-@using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
-@using PaymentSystem.Shared
 @attribute [Authorize]
 @inject HttpClient HttpClient
 @inject NavigationManager navManager
@@ -163,5 +160,4 @@ else
             exception.Redirect();
         }
     }
-
 }
