@@ -26,6 +26,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Application\Currencies\Commands\" />
+    <Folder Include="Application\Users\Commands\" />
     <Folder Include="Data\Migrations\" />
   </ItemGroup>
 

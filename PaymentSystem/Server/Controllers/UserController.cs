@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using PaymentSystem.Server.Application.Users.Queries;
 using PaymentSystem.Server.Data;
 using PaymentSystem.Shared;
 
@@ -16,21 +18,25 @@ namespace PaymentSystem.Server.Controllers
     public class UserController : ControllerBase
     {
         private readonly ApplicationDbContext context;
-        public UserController(ApplicationDbContext context)
+        private readonly IMediator mediator;
+        public UserController(ApplicationDbContext context, IMediator mediator)
         {
             this.context = context;
+            this.mediator = mediator;
         }
 
         [HttpGet]
         [Route("{username}/validate")]
-        public UserValidationResult ValidateUser(string username)
+        public async Task<UserValidationResult> ValidateUserAsync(string username)
         {
-            var user = context.Users.FirstOrDefault(x => x.UserName == username);
-
-            return new UserValidationResult
+            var getUserValidation = new GetUserValidation
             {
-                Exists = user != null
+                Username = username
             };
+
+            var getUserValidationResult = await mediator.Send(getUserValidation);
+
+            return getUserValidationResult;
         }
     }
 }

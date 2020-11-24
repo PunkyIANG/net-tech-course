@@ -77,124 +77,22 @@ namespace PaymentSystem.Server.Controllers
 
         [HttpDelete]
         [Route("{id}")]
-        public IActionResult DeleteWallet([FromRoute] Guid id)
+        public async Task<IActionResult> DeleteWallet([FromRoute] Guid id)
         {
-            var userId = userManager.GetUserId(User);
-            var user = context.Users.Include(x => x.Wallets).FirstOrDefault(x => x.Id == userId);
-
-            var wallet = user.Wallets.Find(x => x.Id == id);
-
-            if (wallet != null)    //if the user has a wallet with this id
+            var deleteWalletCommand = new DeleteWalletCommand
             {
-                user.Wallets.Remove(wallet);
-            }
-            else
-            {
-                return BadRequest();
-            }
-
-            context.SaveChanges();
-
-            return Ok();
-        }
-
-        [HttpPost]
-        [Route("transfer")]
-        public IActionResult MakeTransfer([FromBody] TransferDto data)
-        {
-            var userId = userManager.GetUserId(User);
-            var user = context.Users.Include(x => x.Wallets).FirstOrDefault(x => x.Id == userId);
-
-            if (!user.Wallets.Any(x => x.Currency == data.Currency))
-            {
-                return BadRequest();
-            }
-
-            var source = user.Wallets.FirstOrDefault(x => x.Currency == data.Currency);
-
-            var destinationUser = context.Users.Include(x => x.Wallets).FirstOrDefault(x => x.UserName == data.Username);
-
-            if (destinationUser == null)
-            {
-                return BadRequest();
-            }
-
-            var destination = destinationUser.Wallets.FirstOrDefault(x => x.Currency == data.Currency);
-
-            if (source.Amount < data.Amount)
-            {
-                return BadRequest();
-            }
-
-            if (destination == null)
-            {
-                destination = new Wallet
-                {
-                    Amount = 0,
-                    Currency = data.Currency
-                };
-
-                destinationUser.Wallets.Add(destination);
-            }
-
-            source.Amount -= data.Amount;
-            destination.Amount += data.Amount;
-
-            var transaction = new Transactions()
-            {
-                Amount = data.Amount,
-                Date = DateTime.Now,
-                SourceWalletId = source.Id,
-                DestinationWalletId = destination.Id
+                UserId = userManager.GetUserId(User),
+                WalletId = id
             };
 
-            context.Add(transaction);
+            var deleteWalletResult = await mediator.Send(deleteWalletCommand);
 
-            context.SaveChanges();
-
-            return Ok();
-        }
-
-        [HttpGet]
-        [Route("transfers/{itemsPerPage}/{pageNumber}")]
-        public TransactionsHistoryData GetTransactions(int itemsPerPage, int pageNumber, [FromQuery] Direction direction)
-        {
-            var userId = userManager.GetUserId(User);
-
-            var walletIds = context.Wallets.Where(w => w.ApplicationUserId == userId).Select(w => w.Id).ToList();
-
-            IQueryable<Transactions> query;
-            Transactions[] transactions;
-
-            switch (direction)
+            if (!deleteWalletResult.IsSuccessful)
             {
-                case Direction.Inbound:
-                    query = context.Transactions.Where(t => walletIds.Contains(t.SourceWalletId));
-                    transactions = query.OrderByDescending(x => x.Date)
-                        .Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage).ToArray();
-                    break;
-
-                case Direction.Outbound:
-                    query = context.Transactions.Where(t => walletIds.Contains(t.DestinationWalletId));
-                    transactions = query.OrderByDescending(x => x.Date)
-                        .Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage).ToArray();
-                    break;
-                case Direction.None:
-                default:
-                    query = context.Transactions.Where(t =>
-                        walletIds.Contains(t.DestinationWalletId) || walletIds.Contains(t.SourceWalletId));
-                    transactions = query.OrderByDescending(x => x.Date)
-                        .Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage).ToArray();
-                    break;
+                return BadRequest();
             }
 
-            var transactionsData = new TransactionsHistoryData
-            {
-                Transactions = transactions.Select(DomainMapper.ToDto).ToArray(),
-                ItemCount = query.Count()
-            };
-
-            return transactionsData;
+            return Ok();
         }
     }
 }

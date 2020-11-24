@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using PaymentSystem.Server.Data;
+using PaymentSystem.Server.Helpers;
 using PaymentSystem.Server.Models;
 using System;
 using System.Collections.Generic;
@@ -10,28 +11,13 @@ using System.Threading.Tasks;
 
 namespace PaymentSystem.Server.Application.Wallets.Commands
 {
-    public class CreateWalletCommand : IRequest<CreateWalletResult>
+    public class CreateWalletCommand : IRequest<BoolResult>
     {
         public string UserId { get; set; }
         public string Currency { get; set; }
     }
 
-    public class CreateWalletResult
-    {
-        public bool IsSuccessful { get; set; }
-
-        public static CreateWalletResult ReturnSuccess()
-        {
-            return new CreateWalletResult { IsSuccessful = true };
-        }
-
-        public static CreateWalletResult ReturnFailure()
-        {
-            return new CreateWalletResult { IsSuccessful = false };
-        }
-    }
-
-    public class CreateWalletCommandHandler : IRequestHandler<CreateWalletCommand, CreateWalletResult>
+    public class CreateWalletCommandHandler : IRequestHandler<CreateWalletCommand, BoolResult>
     {
         private readonly ApplicationDbContext context;
         public CreateWalletCommandHandler(ApplicationDbContext context)
@@ -39,18 +25,18 @@ namespace PaymentSystem.Server.Application.Wallets.Commands
             this.context = context;
         }
 
-        public async Task<CreateWalletResult> Handle(CreateWalletCommand command, CancellationToken cancellationToken)
+        public async Task<BoolResult> Handle(CreateWalletCommand command, CancellationToken cancellationToken)
         {
             if (!CurrencyManager.Currencies.Contains(command.Currency))
             {
-                return CreateWalletResult.ReturnFailure();
+                return BoolResult.ReturnFailure();
             }
 
             var user = await context.Users.Include(x => x.Wallets).FirstOrDefaultAsync(x => x.Id == command.UserId);
 
             if (user.Wallets.Any(x => x.Currency == command.Currency))
             {
-                return CreateWalletResult.ReturnFailure();
+                return BoolResult.ReturnFailure();
             }
 
             var wallet = new Wallet
@@ -69,7 +55,7 @@ namespace PaymentSystem.Server.Application.Wallets.Commands
 
             context.SaveChanges();
 
-            return CreateWalletResult.ReturnSuccess();
+            return BoolResult.ReturnSuccess();
 
         }
     }
