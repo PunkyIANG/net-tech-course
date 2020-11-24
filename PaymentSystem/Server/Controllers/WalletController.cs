@@ -13,6 +13,9 @@ using Microsoft.AspNetCore.Authorization;
 using PaymentSystem.Shared;
 using Wallet = PaymentSystem.Server.Models.Wallet;
 using PaymentSystem.Server.Helpers;
+using PaymentSystem.Server.Application.Wallets.Queries;
+using MediatR;
+using PaymentSystem.Server.Application.Wallets.Commands;
 
 namespace PaymentSystem.Server.Controllers
 {
@@ -23,18 +26,27 @@ namespace PaymentSystem.Server.Controllers
     {
         private readonly ApplicationDbContext context;
         private readonly UserManager<ApplicationUser> userManager;
+        private readonly IMediator mediator;
 
-        public WalletController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public WalletController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IMediator mediator)
         {
             this.context = context;
             this.userManager = userManager;
+            this.mediator = mediator;
         }
 
         [HttpGet]
-        public List<Wallet> GetWallets()
+        public async Task<List<Wallet>> GetWallets()
         {
-            var userId = userManager.GetUserId(User);
+            /*var userId = userManager.GetUserId(User);
             var wallets = context.Users.Include(x => x.Wallets).FirstOrDefault(x => x.Id == userId).Wallets;
+            return wallets;*/
+
+            var query = new GetWalletsQuery
+            {
+                UserId = userManager.GetUserId(User)
+            };
+            var wallets = await mediator.Send(query);
             return wallets;
         }
 
@@ -49,9 +61,9 @@ namespace PaymentSystem.Server.Controllers
 
 
         [HttpPost]
-        public IActionResult CreateWallet([FromQuery] string currency)
+        public async Task<IActionResult> CreateWallet([FromQuery] string currency)
         {
-            if (!CurrencyManager.Currencies.Contains(currency))
+            /*if (!CurrencyManager.Currencies.Contains(currency))
             {
                 return BadRequest();
             }
@@ -80,6 +92,22 @@ namespace PaymentSystem.Server.Controllers
             user.Wallets.Add(wallet);
 
             context.SaveChanges();
+
+            return Ok();*/
+
+
+            var createWalletCommand = new CreateWalletCommand
+            {
+                UserId = userManager.GetUserId(User),
+                Currency = currency
+            };
+
+            var createWalletResult = await mediator.Send(createWalletCommand);
+
+            if (!createWalletResult.IsSuccessful)
+            {
+                return BadRequest();
+            }
 
             return Ok();
         }
