@@ -14,6 +14,7 @@ using System.Linq;
 using PaymentSystem.Server.Data;
 using PaymentSystem.Server.Models;
 using System.Security.Claims;
+using MediatR;
 
 namespace PaymentSystem.Server
 {
@@ -45,6 +46,8 @@ namespace PaymentSystem.Server
 
             services.Configure<IdentityOptions>(options =>
                 options.ClaimsIdentity.UserIdClaimType = ClaimTypes.NameIdentifier);
+
+            services.AddMediatR(typeof(Startup));
 
             services.AddControllersWithViews();
             services.AddRazorPages();
