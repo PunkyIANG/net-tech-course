@@ -169,13 +169,13 @@ namespace PaymentSystem.Server.Controllers
             switch (direction)
             {
                 case Direction.Inbound:
-                    query = context.Transactions.Where(t => walletIds.Contains(t.SourceWalletId));
+                    query = context.Transactions.Where(t => walletIds.Contains(t.DestinationWalletId));
                     transactions = query.OrderByDescending(x => x.Date)
                         .Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage).ToArray();
                     break;
 
                 case Direction.Outbound:
-                    query = context.Transactions.Where(t => walletIds.Contains(t.DestinationWalletId));
+                    query = context.Transactions.Where(t => walletIds.Contains(t.SourceWalletId));
                     transactions = query.OrderByDescending(x => x.Date)
                         .Skip((pageNumber - 1) * itemsPerPage).Take(itemsPerPage).ToArray();
                     break;
@@ -188,9 +188,14 @@ namespace PaymentSystem.Server.Controllers
                     break;
             }
 
-            var transactionsData = new TransactionsHistoryData
+            //incredibly rough, need better ideas for getting the usernames and currency out of the transaction
+            var transactionsData = new TransactionsHistoryData  
             {
-                Transactions = transactions.Select(DomainMapper.ToDto).ToArray(),
+                Transactions = transactions.Select(t => DomainMapper.ToDto(t, 
+                    context.Users.Find(context.Wallets.Find(t.SourceWalletId).ApplicationUserId),
+                    context.Users.Find(context.Wallets.Find(t.DestinationWalletId).ApplicationUserId),
+                    context.Wallets.Find(t.SourceWalletId)
+                )).ToArray(),
                 ItemCount = query.Count()
             };
 

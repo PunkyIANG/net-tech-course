@@ -13,15 +13,22 @@
         text-decoration: none;
         transition: background-color .3s;
     }
-        /* Style the active/current link */
-        .pagination a.active {
-            background-color: dodgerblue;
-            color: white;
-        }
-        /* Add a grey background color on mouse-over */
-        .pagination a:hover:not(.active) {
-            background-color: #ddd;
-        }
+    /* Style the active/current link */
+    .pagination a.active {
+        background-color: #05163d;
+        color: white;
+    }
+    /* Add a grey background color on mouse-over */
+    .pagination a:hover:not(.active) {
+        background-color: #ddd;
+    }
+
+    thead {
+        background-color: #05163d;
+        color: white;
+    }
+
+
 </style>
 
 <h3>Transfer History</h3>
@@ -48,21 +55,21 @@ else
             <tr>
                 <td>Date</td>
                 <td>Amount</td>
-                <td>DestinationWalletId</td>
-                <td>SourceWalletId</td>
-                <td>Id</td>
+                <td>Currency</td>
+                <td>Source Username</td>
+                <td>Destination Username</td>
             </tr>
         </thead>
         <tbody>
             @foreach (var transaction in transactionsData.Transactions)
             {
-                <tr>
-                    <td>@transaction.Date</td>
-                    <td>@transaction.Amount</td>
-                    <td>@transaction.DestinationWalletId</td>
-                    <td>@transaction.SourceWalletId</td>
-                    <td>@transaction.Id</td>
-                </tr>
+            <tr>
+                <td>@transaction.Date</td>
+                <td>@transaction.Amount</td>
+                <td>@transaction.Currency</td>
+                <td>@transaction.SourceUsername</td>
+                <td>@transaction.DestinationUsername</td>
+            </tr>
             }
         </tbody>
     </table>
@@ -109,7 +116,8 @@ else
     {
         var div = transactionsData.ItemCount / itemsPerPage;
         var mod = transactionsData.ItemCount % itemsPerPage;
-        return div + (mod > 0 ? 1 : 0);
+        var result = div + (mod > 0 ? 1 : 0);
+        return result > 0 ? result : 1; //never have 0 pages
     }
 
     private async Task ChangeDirection(Direction dir)
