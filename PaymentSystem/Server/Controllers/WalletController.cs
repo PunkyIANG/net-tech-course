@@ -38,10 +38,6 @@ namespace PaymentSystem.Server.Controllers
         [HttpGet]
         public async Task<List<Wallet>> GetWallets()
         {
-            /*var userId = userManager.GetUserId(User);
-            var wallets = context.Users.Include(x => x.Wallets).FirstOrDefault(x => x.Id == userId).Wallets;
-            return wallets;*/
-
             var query = new GetWalletsQuery
             {
                 UserId = userManager.GetUserId(User)
@@ -63,39 +59,6 @@ namespace PaymentSystem.Server.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateWallet([FromQuery] string currency)
         {
-            /*if (!CurrencyManager.Currencies.Contains(currency))
-            {
-                return BadRequest();
-            }
-
-            var userId = userManager.GetUserId(User);
-
-            var user = context.Users.Include(x => x.Wallets).FirstOrDefault(x => x.Id == userId);
-
-            if (user.Wallets.Any(x => x.Currency == currency))
-            {
-                return BadRequest();
-            }
-
-            var wallet = new Wallet
-            {
-                Amount = 0,
-                Currency = currency
-            };
-
-
-            if (user.Wallets == null)
-            {
-                user.Wallets = new List<Wallet> { wallet };
-            }
-
-            user.Wallets.Add(wallet);
-
-            context.SaveChanges();
-
-            return Ok();*/
-
-
             var createWalletCommand = new CreateWalletCommand
             {
                 UserId = userManager.GetUserId(User),
