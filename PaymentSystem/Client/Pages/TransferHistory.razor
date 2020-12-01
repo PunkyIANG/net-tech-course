@@ -96,7 +96,7 @@ else
     {
         try
         {
-            transactionsData = await HttpClient.GetFromJsonAsync<TransactionsHistoryData>($"api/wallet/transfers/{itemsPerPage}/{pNam}?direction={direction}");
+            transactionsData = await HttpClient.GetFromJsonAsync<TransactionsHistoryData>($"api/transfer/transfers/{itemsPerPage}/{pNam}?direction={direction}");
             pageNumber = pNam;
         }
         catch (AccessTokenNotAvailableException exception)

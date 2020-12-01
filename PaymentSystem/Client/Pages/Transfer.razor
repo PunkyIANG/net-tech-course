@@ -103,7 +103,7 @@ else
     {
         try
         {
-            var response = await HttpClient.PostAsJsonAsync($"api/wallet/transfer", transferData);
+            var response = await HttpClient.PostAsJsonAsync($"api/transfer/transfer", transferData);
 
             if (response.IsSuccessStatusCode)
             {

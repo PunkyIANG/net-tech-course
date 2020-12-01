@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PaymentSystem.Shared;
 using PaymentSystem.Server;
+using PaymentSystem.Server.Application.Currencies.Queries;
+using MediatR;
 
 namespace PaymentSystem.Server.Controllers
 {
@@ -13,13 +15,21 @@ namespace PaymentSystem.Server.Controllers
     [ApiController]
     public class CurrencyController : ControllerBase
     {
-        [HttpGet]
-        public CurrencyList GetCurrencies()
+        private readonly IMediator mediator;
+
+        public CurrencyController(IMediator mediator)
         {
-            return new CurrencyList
-            {
-                Currencies = CurrencyManager.Currencies
-            };
+            this.mediator = mediator;
+        }
+
+        [HttpGet]
+        public async Task<CurrencyList> GetCurrenciesAsync()
+        {
+            var getCurrenciesQuery = new GetCurrenciesQuery();
+
+            var getCurrenciesQueryResult = await mediator.Send(getCurrenciesQuery);
+
+            return getCurrenciesQueryResult;
         }
     }
 }
