@@ -26,13 +26,15 @@ namespace PaymentSystem.Server.Application.Wallets.Commands
 
         public async Task<BoolResult> Handle(DeleteWalletCommand command, CancellationToken cancellationToken)
         {
-            var user = await context.Users.Include(x => x.Wallets).FirstOrDefaultAsync(x => x.Id == command.UserId);
+            //var user = await context.Users.Include(x => x.Wallets).FirstOrDefaultAsync(x => x.Id == command.UserId);
 
-            var wallet = user.Wallets.Find(x => x.Id == command.WalletId);
+            //var wallet = user.Wallets.Find(x => x.Id == command.WalletId);
+
+            var wallet = context.Wallets.FirstOrDefault(w => w.Id == command.WalletId && w.ApplicationUserId == command.UserId);
 
             if (wallet != null)
             {
-                user.Wallets.Remove(wallet);
+                context.Wallets.Remove(wallet);
             }
             else
             {
