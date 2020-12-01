@@ -15,6 +15,8 @@ using PaymentSystem.Server.Data;
 using PaymentSystem.Server.Models;
 using System.Security.Claims;
 using MediatR;
+using PaymentSystem.Server.Application.Promotion;
+using PaymentSystem.Server.Application.Currencies;
 
 namespace PaymentSystem.Server
 {
@@ -48,6 +50,9 @@ namespace PaymentSystem.Server
                 options.ClaimsIdentity.UserIdClaimType = ClaimTypes.NameIdentifier);
 
             services.AddMediatR(typeof(Startup));
+
+            services.AddSingleton<IPromotionManager, PromotionManager>();
+            services.AddSingleton<ICurrencyManager, CurrencyManager>();
 
             services.AddControllersWithViews();
             services.AddRazorPages();

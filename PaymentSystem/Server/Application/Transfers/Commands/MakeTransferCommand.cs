@@ -12,13 +12,44 @@ using System.Threading.Tasks;
 
 namespace PaymentSystem.Server.Application.Transfers.Commands
 {
-    public class MakeTransferCommand : IRequest<BoolResult>
+    public class MakeTransferCommand : IRequest<MakeTransferResult>
     {
         public string UserId { get; set; }
         public TransferDto Data { get; set; }
     }
 
-    public class MakeTransferCommandHandler : IRequestHandler<MakeTransferCommand, BoolResult>
+    public class MakeTransferResult 
+    {
+        public bool IsSuccessful { get; set; }
+        public string SuccessMessage { get; set; }
+        public string FailureReason { get; set; }
+
+        public static MakeTransferResult ReturnSuccess()
+        {
+            return new MakeTransferResult { IsSuccessful = true };
+        }
+
+        public static MakeTransferResult ReturnSuccess(string successMessage)
+        {
+            return new MakeTransferResult {
+                IsSuccessful = true,
+                SuccessMessage = successMessage
+            };
+        }
+
+
+        public static MakeTransferResult ReturnFailure(string failureReason)
+        {
+            return new MakeTransferResult
+            {
+                IsSuccessful = false,
+                FailureReason = failureReason
+            };
+        }
+
+    }
+
+    public class MakeTransferCommandHandler : IRequestHandler<MakeTransferCommand, MakeTransferResult>
     {
         private readonly ApplicationDbContext context;
         public MakeTransferCommandHandler(ApplicationDbContext context)
@@ -26,13 +57,13 @@ namespace PaymentSystem.Server.Application.Transfers.Commands
             this.context = context;
         }
 
-        public async Task<BoolResult> Handle(MakeTransferCommand command, CancellationToken cancellationToken)
+        public async Task<MakeTransferResult> Handle(MakeTransferCommand command, CancellationToken cancellationToken)
         {
             var user = await context.Users.Include(x => x.Wallets).FirstOrDefaultAsync(x => x.Id == command.UserId);
 
             if (!user.Wallets.Any(x => x.Currency == command.Data.Currency))
             {
-                return BoolResult.ReturnFailure();
+                return MakeTransferResult.ReturnFailure("MISSING_SOURCE_WALLET");
             }
 
             var source = user.Wallets.FirstOrDefault(x => x.Currency == command.Data.Currency);
@@ -41,16 +72,17 @@ namespace PaymentSystem.Server.Application.Transfers.Commands
 
             if (destinationUser == null)
             {
-                return BoolResult.ReturnFailure();
+                return MakeTransferResult.ReturnFailure("MISSING_DESTINATION_USER");
             }
 
             var destination = destinationUser.Wallets.FirstOrDefault(x => x.Currency == command.Data.Currency);
 
             if (source.Amount < command.Data.Amount)
             {
-                return BoolResult.ReturnFailure();
+                return MakeTransferResult.ReturnFailure("INSUFFICIENT_FUNDS");
             }
 
+            var successMessage = string.Empty;
             if (destination == null)
             {
                 destination = new Models.Wallet
@@ -60,6 +92,7 @@ namespace PaymentSystem.Server.Application.Transfers.Commands
                 };
 
                 destinationUser.Wallets.Add(destination);
+                successMessage = "CREATED_NEW_WALLET";
             }
 
             source.Amount -= command.Data.Amount;
@@ -77,7 +110,7 @@ namespace PaymentSystem.Server.Application.Transfers.Commands
 
             context.SaveChanges();
 
-            return BoolResult.ReturnSuccess();
+            return MakeTransferResult.ReturnSuccess(successMessage);
         }
     }
 }

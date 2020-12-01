@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PaymentSystem.Server
+namespace PaymentSystem.Server.Application.Currencies
 {
-    public static class CurrencyManager
+    public class CurrencyManager : ICurrencyManager
     {
-        public static List<string> Currencies { get; }
+        private List<string> Currencies { get; }
 
-        static CurrencyManager()
+        public CurrencyManager()
         {
             Currencies = new List<string>
             {
@@ -17,8 +17,14 @@ namespace PaymentSystem.Server
                 "EUR",
                 "GBP",
                 "MDL",
+                "BTC",
                 "EC"
             };
+        }
+
+        public List<string> GetCurrencies()
+        {
+            return Currencies;
         }
     }
 }

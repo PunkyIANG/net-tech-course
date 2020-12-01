@@ -10,13 +10,35 @@ using System.Threading.Tasks;
 
 namespace PaymentSystem.Server.Application.Wallets.Commands
 {
-    public class DeleteWalletCommand : IRequest<BoolResult>
+    public class DeleteWalletCommand : IRequest<DeleteWalletResult>
     {
         public string UserId { get; set; }
         public Guid WalletId { get; set; }
     }
 
-    public class DeleteWalletCommandHandler : IRequestHandler<DeleteWalletCommand, BoolResult>
+    public class DeleteWalletResult  
+    {
+        public bool IsSuccessful { get; set; }
+        public string SuccessMessage { get; set; }
+        public string FailureReason { get; set; }
+
+        public static DeleteWalletResult ReturnSuccess()
+        {
+            return new DeleteWalletResult { IsSuccessful = true };
+        }
+
+        public static DeleteWalletResult ReturnFailure(string failureReason)
+        {
+            return new DeleteWalletResult
+            {
+                IsSuccessful = false,
+                FailureReason = failureReason
+            };
+        }
+    }
+
+
+public class DeleteWalletCommandHandler : IRequestHandler<DeleteWalletCommand, DeleteWalletResult>
     {
         private readonly ApplicationDbContext context;
         public DeleteWalletCommandHandler(ApplicationDbContext context)
@@ -24,7 +46,7 @@ namespace PaymentSystem.Server.Application.Wallets.Commands
             this.context = context;
         }
 
-        public async Task<BoolResult> Handle(DeleteWalletCommand command, CancellationToken cancellationToken)
+        public async Task<DeleteWalletResult> Handle(DeleteWalletCommand command, CancellationToken cancellationToken)
         {
             //var user = await context.Users.Include(x => x.Wallets).FirstOrDefaultAsync(x => x.Id == command.UserId);
 
@@ -38,12 +60,12 @@ namespace PaymentSystem.Server.Application.Wallets.Commands
             }
             else
             {
-                return BoolResult.ReturnFailure();
+                return DeleteWalletResult.ReturnFailure("WALLET_MISSING_OR_UNAUTHORIZED");
             }
 
             context.SaveChanges();
 
-            return BoolResult.ReturnSuccess();
+            return DeleteWalletResult.ReturnSuccess();
         }
     }
 }
