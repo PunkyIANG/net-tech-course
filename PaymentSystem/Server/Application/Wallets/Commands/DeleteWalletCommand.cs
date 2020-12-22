@@ -10,13 +10,45 @@ using System.Threading.Tasks;
 
 namespace PaymentSystem.Server.Application.Wallets.Commands
 {
-    public class DeleteWalletCommand : IRequest<BoolResult>
+    public class DeleteWalletCommand : IRequest<DeleteWalletResult>
     {
         public string UserId { get; set; }
         public Guid WalletId { get; set; }
     }
 
-    public class DeleteWalletCommandHandler : IRequestHandler<DeleteWalletCommand, BoolResult>
+
+    public class DeleteWalletResult  
+    {
+        public bool IsSuccessful { get; set; }
+        public ExecutionMessage CurrentExecutionMessage { get; set; }
+
+        public enum ExecutionMessage
+        {
+            Success,
+            ErrorWalletMissingOrUnauthorized
+        }
+
+
+        public static DeleteWalletResult ReturnSuccess(ExecutionMessage currentExecutionMessage)
+        {
+            return new DeleteWalletResult { 
+                IsSuccessful = true,
+                CurrentExecutionMessage = currentExecutionMessage
+            };
+        }
+
+        public static DeleteWalletResult ReturnFailure(ExecutionMessage currentExecutionMessage)
+        {
+            return new DeleteWalletResult
+            {
+                IsSuccessful = false,
+                CurrentExecutionMessage = currentExecutionMessage
+            };
+        }
+    }
+
+
+public class DeleteWalletCommandHandler : IRequestHandler<DeleteWalletCommand, DeleteWalletResult>
     {
         private readonly ApplicationDbContext context;
         public DeleteWalletCommandHandler(ApplicationDbContext context)
@@ -24,7 +56,7 @@ namespace PaymentSystem.Server.Application.Wallets.Commands
             this.context = context;
         }
 
-        public async Task<BoolResult> Handle(DeleteWalletCommand command, CancellationToken cancellationToken)
+        public async Task<DeleteWalletResult> Handle(DeleteWalletCommand command, CancellationToken cancellationToken)
         {
             //var user = await context.Users.Include(x => x.Wallets).FirstOrDefaultAsync(x => x.Id == command.UserId);
 
@@ -38,12 +70,12 @@ namespace PaymentSystem.Server.Application.Wallets.Commands
             }
             else
             {
-                return BoolResult.ReturnFailure();
+                return DeleteWalletResult.ReturnFailure(DeleteWalletResult.ExecutionMessage.ErrorWalletMissingOrUnauthorized);
             }
 
             context.SaveChanges();
 
-            return BoolResult.ReturnSuccess();
+            return DeleteWalletResult.ReturnSuccess(DeleteWalletResult.ExecutionMessage.Success);
         }
     }
 }

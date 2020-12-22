@@ -15,11 +15,18 @@ namespace PaymentSystem.Server.Application.Currencies.Queries
 
     public class GetCurrenciesQueryHandler : IRequestHandler<GetCurrenciesQuery, CurrencyList>
     {
+        private readonly ICurrencyManager currencyManager;
+
+        public GetCurrenciesQueryHandler(ICurrencyManager currencyManager)
+        {
+            this.currencyManager = currencyManager;
+        }
+
         public async Task<CurrencyList> Handle(GetCurrenciesQuery query, CancellationToken cancellationToken)
         {
             return new CurrencyList
             {
-                Currencies = CurrencyManager.Currencies
+                Currencies = currencyManager.GetCurrencies()
             };
         }
     } 

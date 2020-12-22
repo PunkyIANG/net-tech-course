@@ -1,5 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using PaymentSystem.Server.Application.Currencies;
+using PaymentSystem.Server.Application.Promotion;
 using PaymentSystem.Server.Data;
 using PaymentSystem.Server.Helpers;
 using PaymentSystem.Server.Models;
@@ -11,37 +13,73 @@ using System.Threading.Tasks;
 
 namespace PaymentSystem.Server.Application.Wallets.Commands
 {
-    public class CreateWalletCommand : IRequest<BoolResult>
+    public class CreateWalletCommand : IRequest<CreateWalletResult>
     {
         public string UserId { get; set; }
         public string Currency { get; set; }
     }
 
-    public class CreateWalletCommandHandler : IRequestHandler<CreateWalletCommand, BoolResult>
+    public class CreateWalletResult 
     {
-        private readonly ApplicationDbContext context;
-        public CreateWalletCommandHandler(ApplicationDbContext context)
+        public bool IsSuccessful { get; set; }
+        public ExecutionMessage CurrentExecutionMessage { get; set; }
+        public decimal Amount { get; set; }
+        public enum ExecutionMessage
         {
-            this.context = context;
+            Success,
+            ErrorInvalidCurrency,
+            ErrorWalletAlreadyExists
         }
 
-        public async Task<BoolResult> Handle(CreateWalletCommand command, CancellationToken cancellationToken)
+        public static CreateWalletResult ReturnSuccess(ExecutionMessage currentExecutionMessage, decimal amount)
         {
-            if (!CurrencyManager.Currencies.Contains(command.Currency))
+            return new CreateWalletResult { 
+                IsSuccessful = true,
+                Amount = amount,
+                CurrentExecutionMessage = currentExecutionMessage
+            };
+        }
+
+        public static CreateWalletResult ReturnFailure(ExecutionMessage currentExecutionMessage)
+        {
+            return new CreateWalletResult
             {
-                return BoolResult.ReturnFailure();
+                IsSuccessful = false,
+                CurrentExecutionMessage = currentExecutionMessage
+            };
+        }
+    }
+
+public class CreateWalletCommandHandler : IRequestHandler<CreateWalletCommand, CreateWalletResult>
+    {
+        private readonly ApplicationDbContext context;
+        private readonly IPromotionManager promotionManager;
+        private readonly ICurrencyManager currencyManager;
+
+        public CreateWalletCommandHandler(ApplicationDbContext context, IPromotionManager promotionManager, ICurrencyManager currencyManager)
+        {
+            this.context = context;
+            this.promotionManager = promotionManager;
+            this.currencyManager = currencyManager;
+        }
+
+        public async Task<CreateWalletResult> Handle(CreateWalletCommand command, CancellationToken cancellationToken)
+        {
+            if (!currencyManager.GetCurrencies().Contains(command.Currency))
+            {
+                return CreateWalletResult.ReturnFailure(CreateWalletResult.ExecutionMessage.ErrorInvalidCurrency);
             }
 
             var user = await context.Users.Include(x => x.Wallets).FirstOrDefaultAsync(x => x.Id == command.UserId);
 
             if (user.Wallets.Any(x => x.Currency == command.Currency))
             {
-                return BoolResult.ReturnFailure();
+                return CreateWalletResult.ReturnFailure(CreateWalletResult.ExecutionMessage.ErrorWalletAlreadyExists);
             }
 
             var wallet = new Wallet
             {
-                Amount = 0,
+                Amount = promotionManager.GetDefaultAmount(command.Currency),
                 Currency = command.Currency
             };
 
@@ -55,7 +93,7 @@ namespace PaymentSystem.Server.Application.Wallets.Commands
 
             context.SaveChanges();
 
-            return BoolResult.ReturnSuccess();
+            return CreateWalletResult.ReturnSuccess(CreateWalletResult.ExecutionMessage.Success, wallet.Amount);
 
         }
     }
