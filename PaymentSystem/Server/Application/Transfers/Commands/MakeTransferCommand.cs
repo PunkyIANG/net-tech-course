@@ -21,29 +21,36 @@ namespace PaymentSystem.Server.Application.Transfers.Commands
     public class MakeTransferResult 
     {
         public bool IsSuccessful { get; set; }
-        public string SuccessMessage { get; set; }
-        public string FailureReason { get; set; }
+        public ExecutionMessage CurrentExecutionMessage { get; set; }
+        public enum ExecutionMessage
+        {
+            Success,
+            SuccessNewDestinationWallet,
+            ErrorMissingSourceWallet,
+            ErrorMissingDestinationUser,
+            ErrorInsufficientFunds
+        }
 
         public static MakeTransferResult ReturnSuccess()
         {
             return new MakeTransferResult { IsSuccessful = true };
         }
 
-        public static MakeTransferResult ReturnSuccess(string successMessage)
+        public static MakeTransferResult ReturnSuccess(ExecutionMessage currentExecutionMessage)
         {
             return new MakeTransferResult {
                 IsSuccessful = true,
-                SuccessMessage = successMessage
+                CurrentExecutionMessage = currentExecutionMessage
             };
         }
 
 
-        public static MakeTransferResult ReturnFailure(string failureReason)
+        public static MakeTransferResult ReturnFailure(ExecutionMessage currentExecutionMessage)
         {
             return new MakeTransferResult
             {
                 IsSuccessful = false,
-                FailureReason = failureReason
+                CurrentExecutionMessage = currentExecutionMessage
             };
         }
 
@@ -63,7 +70,7 @@ namespace PaymentSystem.Server.Application.Transfers.Commands
 
             if (!user.Wallets.Any(x => x.Currency == command.Data.Currency))
             {
-                return MakeTransferResult.ReturnFailure("MISSING_SOURCE_WALLET");
+                return MakeTransferResult.ReturnFailure(MakeTransferResult.ExecutionMessage.ErrorMissingSourceWallet);
             }
 
             var source = user.Wallets.FirstOrDefault(x => x.Currency == command.Data.Currency);
@@ -72,17 +79,17 @@ namespace PaymentSystem.Server.Application.Transfers.Commands
 
             if (destinationUser == null)
             {
-                return MakeTransferResult.ReturnFailure("MISSING_DESTINATION_USER");
+                return MakeTransferResult.ReturnFailure(MakeTransferResult.ExecutionMessage.ErrorMissingDestinationUser);
             }
 
             var destination = destinationUser.Wallets.FirstOrDefault(x => x.Currency == command.Data.Currency);
 
             if (source.Amount < command.Data.Amount)
             {
-                return MakeTransferResult.ReturnFailure("INSUFFICIENT_FUNDS");
+                return MakeTransferResult.ReturnFailure(MakeTransferResult.ExecutionMessage.ErrorInsufficientFunds);
             }
 
-            var successMessage = string.Empty;
+            var successMessage = MakeTransferResult.ExecutionMessage.Success;
             if (destination == null)
             {
                 destination = new Models.Wallet
@@ -92,7 +99,7 @@ namespace PaymentSystem.Server.Application.Transfers.Commands
                 };
 
                 destinationUser.Wallets.Add(destination);
-                successMessage = "CREATED_NEW_WALLET";
+                successMessage = MakeTransferResult.ExecutionMessage.SuccessNewDestinationWallet;
             }
 
             source.Amount -= command.Data.Amount;

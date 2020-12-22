@@ -7,7 +7,7 @@ namespace PaymentSystem.Server.Application.Currencies
 {
     public class CurrencyManager : ICurrencyManager
     {
-        private List<string> Currencies { get; }
+        private IEnumerable<string> Currencies { get; }
 
         public CurrencyManager()
         {
@@ -22,7 +22,7 @@ namespace PaymentSystem.Server.Application.Currencies
             };
         }
 
-        public List<string> GetCurrencies()
+        public IEnumerable<string> GetCurrencies()
         {
             return Currencies;
         }

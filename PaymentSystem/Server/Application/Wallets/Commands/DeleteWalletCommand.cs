@@ -16,23 +16,33 @@ namespace PaymentSystem.Server.Application.Wallets.Commands
         public Guid WalletId { get; set; }
     }
 
+
     public class DeleteWalletResult  
     {
         public bool IsSuccessful { get; set; }
-        public string SuccessMessage { get; set; }
-        public string FailureReason { get; set; }
+        public ExecutionMessage CurrentExecutionMessage { get; set; }
 
-        public static DeleteWalletResult ReturnSuccess()
+        public enum ExecutionMessage
         {
-            return new DeleteWalletResult { IsSuccessful = true };
+            Success,
+            ErrorWalletMissingOrUnauthorized
         }
 
-        public static DeleteWalletResult ReturnFailure(string failureReason)
+
+        public static DeleteWalletResult ReturnSuccess(ExecutionMessage currentExecutionMessage)
+        {
+            return new DeleteWalletResult { 
+                IsSuccessful = true,
+                CurrentExecutionMessage = currentExecutionMessage
+            };
+        }
+
+        public static DeleteWalletResult ReturnFailure(ExecutionMessage currentExecutionMessage)
         {
             return new DeleteWalletResult
             {
                 IsSuccessful = false,
-                FailureReason = failureReason
+                CurrentExecutionMessage = currentExecutionMessage
             };
         }
     }
@@ -60,12 +70,12 @@ public class DeleteWalletCommandHandler : IRequestHandler<DeleteWalletCommand, D
             }
             else
             {
-                return DeleteWalletResult.ReturnFailure("WALLET_MISSING_OR_UNAUTHORIZED");
+                return DeleteWalletResult.ReturnFailure(DeleteWalletResult.ExecutionMessage.ErrorWalletMissingOrUnauthorized);
             }
 
             context.SaveChanges();
 
-            return DeleteWalletResult.ReturnSuccess();
+            return DeleteWalletResult.ReturnSuccess(DeleteWalletResult.ExecutionMessage.Success);
         }
     }
 }

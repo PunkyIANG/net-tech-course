@@ -22,24 +22,30 @@ namespace PaymentSystem.Server.Application.Wallets.Commands
     public class CreateWalletResult 
     {
         public bool IsSuccessful { get; set; }
-        public string SuccessMessage { get; set; }
-        public string FailureReason { get; set; }
+        public ExecutionMessage CurrentExecutionMessage { get; set; }
         public decimal Amount { get; set; }
+        public enum ExecutionMessage
+        {
+            Success,
+            ErrorInvalidCurrency,
+            ErrorWalletAlreadyExists
+        }
 
-        public static CreateWalletResult ReturnSuccess(decimal amount)
+        public static CreateWalletResult ReturnSuccess(ExecutionMessage currentExecutionMessage, decimal amount)
         {
             return new CreateWalletResult { 
                 IsSuccessful = true,
-                Amount = amount
+                Amount = amount,
+                CurrentExecutionMessage = currentExecutionMessage
             };
         }
 
-        public static CreateWalletResult ReturnFailure(string failureReason)
+        public static CreateWalletResult ReturnFailure(ExecutionMessage currentExecutionMessage)
         {
             return new CreateWalletResult
             {
                 IsSuccessful = false,
-                FailureReason = failureReason
+                CurrentExecutionMessage = currentExecutionMessage
             };
         }
     }
@@ -61,14 +67,14 @@ public class CreateWalletCommandHandler : IRequestHandler<CreateWalletCommand, C
         {
             if (!currencyManager.GetCurrencies().Contains(command.Currency))
             {
-                return (CreateWalletResult)CreateWalletResult.ReturnFailure("INVALID_CURRENCY");
+                return CreateWalletResult.ReturnFailure(CreateWalletResult.ExecutionMessage.ErrorInvalidCurrency);
             }
 
             var user = await context.Users.Include(x => x.Wallets).FirstOrDefaultAsync(x => x.Id == command.UserId);
 
             if (user.Wallets.Any(x => x.Currency == command.Currency))
             {
-                return (CreateWalletResult)CreateWalletResult.ReturnFailure("WALLET_ALREADY_EXISTS");
+                return CreateWalletResult.ReturnFailure(CreateWalletResult.ExecutionMessage.ErrorWalletAlreadyExists);
             }
 
             var wallet = new Wallet
@@ -87,7 +93,7 @@ public class CreateWalletCommandHandler : IRequestHandler<CreateWalletCommand, C
 
             context.SaveChanges();
 
-            return CreateWalletResult.ReturnSuccess(wallet.Amount);
+            return CreateWalletResult.ReturnSuccess(CreateWalletResult.ExecutionMessage.Success, wallet.Amount);
 
         }
     }

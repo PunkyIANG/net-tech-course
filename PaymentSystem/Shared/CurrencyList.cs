@@ -6,6 +6,6 @@ namespace PaymentSystem.Shared
 {
     public class CurrencyList
     {
-        public List<string> Currencies { get; set; }
+        public IEnumerable<string> Currencies { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace PaymentSystem.Server.UnitTests
     class MakeTransferCommandHandlerTests
     {
         private ApplicationDbContext context;
+        private MakeTransferCommandHandler sut;
 
         [SetUp]
         public void Setup()
@@ -70,13 +72,20 @@ namespace PaymentSystem.Server.UnitTests
             context.Add(destinationUser);
 
             context.SaveChanges();
+
+            sut = new MakeTransferCommandHandler(context);
+        }
+
+        [TearDown]
+
+        public void Teardown()
+        {
+            context.Dispose();
         }
 
         [Test] 
         public async Task MakeTransferSuccessful()
         {
-            var sut = new MakeTransferCommandHandler(context);
-
             var command = new MakeTransferCommand
             {
                 UserId = "test_source_user_id",
@@ -89,15 +98,19 @@ namespace PaymentSystem.Server.UnitTests
             };
 
             var result = await sut.Handle(command, CancellationToken.None);
+            bool transactionSuccess = context.Transactions.Where(t => t.Amount == 100) != null;
 
-            Assert.IsTrue(result.IsSuccessful);
+            Assert.Multiple(() =>
+            {
+                Assert.IsTrue(result.IsSuccessful);
+                Assert.IsTrue(transactionSuccess);
+                Assert.AreEqual(MakeTransferResult.ExecutionMessage.Success, result.CurrentExecutionMessage);
+            });
         }
 
         [Test]
         public async Task MakeTransferSuccessfulNewWallet()
         {
-            var sut = new MakeTransferCommandHandler(context);
-
             var command = new MakeTransferCommand
             {
                 UserId = "test_source_user_id",
@@ -110,11 +123,14 @@ namespace PaymentSystem.Server.UnitTests
             };
 
             var result = await sut.Handle(command, CancellationToken.None);
+            bool transactionSuccess = context.Transactions.Where(t => t.Amount == 50) != null;
+
 
             Assert.Multiple(() =>
             {
                 Assert.IsTrue(result.IsSuccessful);
-                Assert.AreEqual("CREATED_NEW_WALLET", result.SuccessMessage);
+                Assert.IsTrue(transactionSuccess);
+                Assert.AreEqual(MakeTransferResult.ExecutionMessage.SuccessNewDestinationWallet, result.CurrentExecutionMessage);
             });
         }
 
@@ -123,8 +139,6 @@ namespace PaymentSystem.Server.UnitTests
         [Test]
         public async Task MakeTransferMissingSourceWallet()
         {
-            var sut = new MakeTransferCommandHandler(context);
-
             var command = new MakeTransferCommand
             {
                 UserId = "test_source_user_id",
@@ -141,15 +155,13 @@ namespace PaymentSystem.Server.UnitTests
             Assert.Multiple(() =>
             {
                 Assert.IsFalse(result.IsSuccessful);
-                Assert.AreEqual("MISSING_SOURCE_WALLET", result.FailureReason);
+                Assert.AreEqual(MakeTransferResult.ExecutionMessage.ErrorMissingSourceWallet, result.CurrentExecutionMessage);
             });
         }
 
         [Test]
         public async Task MakeTransferMissingDestinationUser()
         {
-            var sut = new MakeTransferCommandHandler(context);
-
             var command = new MakeTransferCommand
             {
                 UserId = "test_source_user_id",
@@ -166,15 +178,13 @@ namespace PaymentSystem.Server.UnitTests
             Assert.Multiple(() =>
             {
                 Assert.IsFalse(result.IsSuccessful);
-                Assert.AreEqual("MISSING_DESTINATION_USER", result.FailureReason);
+                Assert.AreEqual(MakeTransferResult.ExecutionMessage.ErrorMissingDestinationUser, result.CurrentExecutionMessage);
             });
         }
 
         [Test]
         public async Task MakeTransferInsufficientFunds()
         {
-            var sut = new MakeTransferCommandHandler(context);
-
             var command = new MakeTransferCommand
             {
                 UserId = "test_source_user_id",
@@ -191,7 +201,7 @@ namespace PaymentSystem.Server.UnitTests
             Assert.Multiple(() =>
             {
                 Assert.IsFalse(result.IsSuccessful);
-                Assert.AreEqual("INSUFFICIENT_FUNDS", result.FailureReason);
+                Assert.AreEqual(MakeTransferResult.ExecutionMessage.ErrorInsufficientFunds, result.CurrentExecutionMessage);
             });
         }
     }

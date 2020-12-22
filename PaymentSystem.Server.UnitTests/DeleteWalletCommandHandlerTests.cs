@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +17,9 @@ namespace PaymentSystem.Server.UnitTests
     {
         private ApplicationDbContext context;
         private Guid walletGuid;
+
+        private DeleteWalletCommandHandler sut;
+
 
         [SetUp]
         public void Setup()
@@ -47,13 +51,13 @@ namespace PaymentSystem.Server.UnitTests
             context.Add(user);
 
             context.SaveChanges();
+
+            sut = new DeleteWalletCommandHandler(context);
         }
 
         [Test]
         public async Task DeleteWalletSuccessful()
         {
-            var sut = new DeleteWalletCommandHandler(context);
-
             var command = new DeleteWalletCommand
             {
                 UserId = "test_user_id",
@@ -61,6 +65,7 @@ namespace PaymentSystem.Server.UnitTests
             };
 
             var result = await sut.Handle(command, CancellationToken.None);
+            bool deletionResult = context.Wallets.Where(w => w.Currency == "EC") == null;
 
             Assert.IsTrue(result.IsSuccessful);
         }
@@ -68,8 +73,6 @@ namespace PaymentSystem.Server.UnitTests
         [Test]
         public async Task DeleteWalletMissing()
         {
-            var sut = new DeleteWalletCommandHandler(context);
-
             var command = new DeleteWalletCommand
             {
                 UserId = "test_user_id",
@@ -81,7 +84,7 @@ namespace PaymentSystem.Server.UnitTests
             Assert.Multiple(() =>
             {
                 Assert.IsFalse(result.IsSuccessful);
-                Assert.AreEqual("WALLET_MISSING_OR_UNAUTHORIZED", result.FailureReason);
+                Assert.AreEqual(DeleteWalletResult.ExecutionMessage.ErrorWalletMissingOrUnauthorized, result.CurrentExecutionMessage);
             }
             );
         }
@@ -89,8 +92,6 @@ namespace PaymentSystem.Server.UnitTests
         [Test]
         public async Task DeleteWalletUnauthorizedUser()
         {
-            var sut = new DeleteWalletCommandHandler(context);
-
             var command = new DeleteWalletCommand
             {
                 UserId = "test_unauthorized_user_id",
@@ -102,7 +103,7 @@ namespace PaymentSystem.Server.UnitTests
             Assert.Multiple(() =>
             {
                 Assert.IsFalse(result.IsSuccessful);
-                Assert.AreEqual("WALLET_MISSING_OR_UNAUTHORIZED", result.FailureReason);
+                Assert.AreEqual(DeleteWalletResult.ExecutionMessage.ErrorWalletMissingOrUnauthorized, result.CurrentExecutionMessage);
             }
             );
         }

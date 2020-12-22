@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,6 +21,8 @@ namespace PaymentSystem.Server.UnitTests
         private ApplicationDbContext context;
         private Mock<IPromotionManager> promotionManagerMock;
         private Mock<ICurrencyManager> currencyManagerMock;
+
+        private CreateWalletCommandHandler sut;
 
         [SetUp]
         public void Setup()
@@ -64,14 +67,21 @@ namespace PaymentSystem.Server.UnitTests
                 "BTC",
                 "EC"
             });
+
+            sut = new CreateWalletCommandHandler(context, promotionManagerMock.Object, currencyManagerMock.Object);
+
+        }
+
+        [TearDown]
+
+        public void Teardown()
+        {
+            context.Dispose();
         }
 
         [Test]
         public async Task CreateWalletSuccessful()
         {
-
-            var sut = new CreateWalletCommandHandler(context, promotionManagerMock.Object, currencyManagerMock.Object);
-
             var command = new CreateWalletCommand
             {
                 UserId = "test_user_id",
@@ -79,15 +89,40 @@ namespace PaymentSystem.Server.UnitTests
             };
 
             var result = await sut.Handle(command, CancellationToken.None);
+            bool walletCreationSuccess = context.Wallets.Where(w => w.Currency == "EUR" & w.Amount == 0) != null;
 
-            Assert.IsTrue(result.IsSuccessful);
+            Assert.Multiple(() =>
+            {
+                Assert.IsTrue(result.IsSuccessful);
+                Assert.IsTrue(walletCreationSuccess);
+                Assert.AreEqual(CreateWalletResult.ExecutionMessage.Success, result.CurrentExecutionMessage);
+            });
+        }
+
+        [Test]
+        public async Task CreateWalletTestAmount()
+        {
+            var command = new CreateWalletCommand
+            {
+                UserId = "test_user_id",
+                Currency = "BTC"
+            };
+
+            var result = await sut.Handle(command, CancellationToken.None);
+            bool walletCreationSuccess = context.Wallets.Where(w => w.Currency == "BTC" && w.Amount == 500) != null;
+
+
+            Assert.Multiple(() =>
+            {
+                Assert.IsTrue(result.IsSuccessful);
+                Assert.IsTrue(walletCreationSuccess);
+                Assert.AreEqual(500, result.Amount);
+            });
         }
 
         [Test]
         public async Task CreateWalletInvalidCurrency()
         {
-            var sut = new CreateWalletCommandHandler(context, promotionManagerMock.Object, currencyManagerMock.Object);
-
             var command = new CreateWalletCommand
             {
                 UserId = "test_user_id",
@@ -99,29 +134,26 @@ namespace PaymentSystem.Server.UnitTests
             Assert.Multiple(() =>
             {
                 Assert.IsFalse(result.IsSuccessful);
-                Assert.AreEqual("INVALID_CURRENCY", result.FailureReason);
+                Assert.AreEqual(CreateWalletResult.ExecutionMessage.ErrorInvalidCurrency, result.CurrentExecutionMessage);
             });
         }
 
         [Test]
-        public async Task CreateWalletTestAmount()
+        public async Task CreateWalletExistingCurrency()
         {
-            var sut = new CreateWalletCommandHandler(context, promotionManagerMock.Object, currencyManagerMock.Object);
-
             var command = new CreateWalletCommand
             {
                 UserId = "test_user_id",
-                Currency = "BTC"
+                Currency = "EC"
             };
 
             var result = await sut.Handle(command, CancellationToken.None);
 
             Assert.Multiple(() =>
             {
-                Assert.IsTrue(result.IsSuccessful);
-                Assert.AreEqual(500, result.Amount);
+                Assert.IsFalse(result.IsSuccessful);
+                Assert.AreEqual(CreateWalletResult.ExecutionMessage.ErrorWalletAlreadyExists, result.CurrentExecutionMessage);
             });
         }
-
     }
 }

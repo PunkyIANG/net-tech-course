@@ -7,6 +7,6 @@ namespace PaymentSystem.Server.Application.Currencies
 {
     public interface ICurrencyManager
     {
-        List<string> GetCurrencies();
+        IEnumerable<string> GetCurrencies();
     }
 }
